@@ -228,7 +228,7 @@ namespace TrulyAnYauMoment.SunsetScene
                 return;
             }
 
-            EnsureLineRendererPool(Mathf.Max(1, evaluatedSpans.Count));
+            RefreshPathCache();
             ApplyVisuals();
         }
 
@@ -261,6 +261,15 @@ namespace TrulyAnYauMoment.SunsetScene
             if (visualMode == VisualMode.GeneratedLineRenderers && lineRendererTemplate == null)
             {
                 messages.Add(new AnomalyRayValidationMessage(AnomalyRayValidationSeverity.Error, "Generated Line Renderers mode requires a LineRenderer template.", this));
+            }
+            else if (visualMode == VisualMode.GeneratedLineRenderers && lineRendererTemplate != null)
+            {
+                BuildEvaluatedSpans();
+                int availableRenderers = GetManagedLineRenderers().Count;
+                if (availableRenderers < evaluatedSpans.Count)
+                {
+                    messages.Add(new AnomalyRayValidationMessage(AnomalyRayValidationSeverity.Warning, $"Only {availableRenderers} LineRenderer segment(s) are precreated for {evaluatedSpans.Count} visible span(s). Extra spans will stay hidden until more line children are added.", this));
+                }
             }
 
             if (visualMode == VisualMode.SegmentObjects)
@@ -590,12 +599,12 @@ namespace TrulyAnYauMoment.SunsetScene
                 return;
             }
 
-            EnsureLineRendererPool(Mathf.Max(1, evaluatedSpans.Count));
             List<LineRenderer> renderers = GetManagedLineRenderers();
+            int visibleRendererCount = Mathf.Min(renderers.Count, evaluatedSpans.Count);
 
             for (int index = 0; index < renderers.Count; index++)
             {
-                bool shouldShow = index < evaluatedSpans.Count;
+                bool shouldShow = index < visibleRendererCount;
                 renderers[index].gameObject.SetActive(shouldShow);
                 if (!shouldShow)
                 {
@@ -765,6 +774,11 @@ namespace TrulyAnYauMoment.SunsetScene
             for (int childIndex = 0; childIndex < root.childCount; childIndex++)
             {
                 Transform child = root.GetChild(childIndex);
+                if (child == lineRendererTemplate.transform)
+                {
+                    continue;
+                }
+
                 if (!child.name.StartsWith(GeneratedRendererPrefix, StringComparison.Ordinal))
                 {
                     continue;
@@ -780,24 +794,6 @@ namespace TrulyAnYauMoment.SunsetScene
             clones.Sort((a, b) => string.CompareOrdinal(a.name, b.name));
             result.AddRange(clones);
             return result;
-        }
-
-        private void EnsureLineRendererPool(int requiredCount)
-        {
-            if (lineRendererTemplate == null)
-            {
-                return;
-            }
-
-            Transform root = generatedLineRoot != null ? generatedLineRoot : transform;
-            List<LineRenderer> renderers = GetManagedLineRenderers();
-
-            for (int index = renderers.Count; index < requiredCount; index++)
-            {
-                LineRenderer clone = Instantiate(lineRendererTemplate, root);
-                clone.name = $"{GeneratedRendererPrefix}{index:00}";
-                clone.gameObject.SetActive(false);
-            }
         }
 
         private List<Vector3> BuildPositionsForSpan(float start, float end)
