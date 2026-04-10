@@ -69,8 +69,8 @@ namespace TrulyAnYauMoment.SunsetScene
         [SerializeField, Min(2)] private int samplesPerSegment = 10;
 
         [Header("Traversal")]
-        [SerializeField] private PathMode pathMode = PathMode.Static;
-        [SerializeField, Min(0f)] private float travelSpeed = 0.15f;
+        [SerializeField] private PathMode pathMode = PathMode.PingPong;
+        [SerializeField, Min(0f)] private float travelSpeed = 0.04f;
         [SerializeField, Range(0.02f, 1f)] private float flowWindowSize = 1f;
         [SerializeField, Min(0f)] private float startDelay = 0f;
         [SerializeField, Range(0f, 1f)] private float previewProgress = 0f;
@@ -137,7 +137,15 @@ namespace TrulyAnYauMoment.SunsetScene
         {
             CacheSegmentObjectState();
             RefreshPathCache();
-            ApplyVisuals();
+
+            if (Application.isPlaying || previewInEditMode)
+            {
+                ApplyVisuals();
+            }
+            else
+            {
+                DisableUnusedVisuals();
+            }
         }
 
         private void OnValidate()
@@ -161,7 +169,15 @@ namespace TrulyAnYauMoment.SunsetScene
 
             CacheSegmentObjectState();
             RefreshPathCache();
-            ApplyVisuals();
+
+            if (Application.isPlaying || previewInEditMode)
+            {
+                ApplyVisuals();
+            }
+            else
+            {
+                DisableUnusedVisuals();
+            }
         }
 
         private void Update()
@@ -1069,5 +1085,6 @@ namespace TrulyAnYauMoment.SunsetScene
             }
         }
 #endif
-    }
 }
+}
+// End of file
